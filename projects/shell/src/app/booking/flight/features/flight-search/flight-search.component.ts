@@ -5,11 +5,11 @@ import { patchState, signalState } from '@ngrx/signals';
 import { rxMethod } from '@ngrx/signals/rxjs-interop';
 import { pipe, tap } from 'rxjs';
 import { ticketActions } from '../../+state/actions';
+import { injectTicketsFacade } from '../../+state/ngrx-store';
 import { Flight } from '../../logic/model/flight';
 import { FlightFilter } from '../../logic/model/flight-filter';
 import { FlightCardComponent } from '../../ui/flight-card/flight-card.component';
 import { FlightFilterComponent } from '../../ui/flight-filter/flight-filter.component';
-import { injectTicketStore } from '../../+state/ngrx-signals/tickets.redux';
 
 
 @Component({
@@ -24,7 +24,7 @@ import { injectTicketStore } from '../../+state/ngrx-signals/tickets.redux';
   templateUrl: './flight-search.component.html',
 })
 export class FlightSearchComponent {
-  private store = injectTicketStore();
+  private ticketFacade = injectTicketsFacade();
 
   from = signal('Hamburg');
   to = signal('Graz');
@@ -72,7 +72,7 @@ export class FlightSearchComponent {
     // Conntect local and global State Management
     rxMethod<Flight[]>(pipe(
       tap(flights => patchState(this.localState, { flights }))
-    ))(this.store.flightEntities);
+    ))(this.ticketFacade.flights);
   }
 
   protected search(filter: FlightFilter): void {
@@ -84,8 +84,9 @@ export class FlightSearchComponent {
       return;
     }
 
-    this.store.dispatch(
-      ticketActions.flightsLoad(this.localState.filter())
+    this.ticketFacade.search(
+      this.localState.filter.from(),
+      this.localState.filter.to()
     );
   }
 
@@ -109,10 +110,10 @@ export class FlightSearchComponent {
       delayed: true
     };
 
-    this.store.dispatch(ticketActions.flightUpdate({ flight: newFlight }));
+    this.ticketFacade.update(newFlight);
   }
 
   protected reset(): void {
-    this.store.dispatch(ticketActions.flightsClear());
+    this.ticketFacade.clear();
   }
 }
